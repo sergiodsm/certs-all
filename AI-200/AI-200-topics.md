@@ -1,19 +1,18 @@
-# Azure AI Cloud Developer Associate Study Index
+# Azure AI Cloud Developer Associate (AZ-204 replacement) - Study Index
 
-This folder contains a domain-by-domain study checklist plus **exam-style practice Q&A (with answers)** focused on building AI solutions with Azure (developer-oriented).
+This folder contains developer-focused study notes and **exam-style practice Q&A (with answers)** for the Microsoft **Azure AI Cloud Developer Associate**.
 
-Note: Microsoft may update certification content over time. Still verify against the *latest* official knowledge base / skills outline for the current exam version.
-
-## Domain files
-- [Azure AI Cloud Developer Associate: Fundamentals](./01-fundamentals.md)
-- [Azure AI Cloud Developer Associate: Natural Language & Conversational AI](./02-language-conversational.md)
-- [Azure AI Cloud Developer Associate: Computer Vision & Document Intelligence](./03-vision-docs.md)
-- [Azure AI Cloud Developer Associate: Speech AI](./04-speech.md)
-- [Azure AI Cloud Developer Associate: Generative AI (Azure OpenAI) & RAG](./05-generative-rag.md)
-- [Azure AI Cloud Developer Associate: Evaluation, Responsible AI, & Deployment](./06-evaluation-responsible-deployment.md)
+## Topics (6)
+- [Azure SDK integration & Python backend development](./01-fundamentals.md)
+- [Azure data management for AI solutions](./02-language-conversational.md)
+- [Vector databases & retrieval (RAG)](./03-vision-docs.md)
+- [Messaging & eventing for scalable AI services](./04-speech.md)
+- [Containerized solutions on Azure (deploy & scale)](./05-generative-rag.md)
+- [Monitoring, troubleshooting, security & responsible AI](./06-evaluation-responsible-deployment.md)
 
 ## Suggested flow
 1. Start with `01-fundamentals.md`
-2. Work through the service domains (`02`–`05`)
-3. Finish with `06-evaluation-responsible-deployment.md` (quality + safety + deployment)
+2. Build the “data + retrieval” pieces (`02`–`03`)
+3. Add scalability (`04`–`05`)
+4. Finish with quality, safety, and operations (`06`)
 
