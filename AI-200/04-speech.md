@@ -1,82 +1,164 @@
-# Azure AI Cloud Developer Associate: Messaging & Eventing for Scalable AI Services
+# Module 04 — Messaging & Eventing for Scalable AI Services
 
-AI apps often need asynchronous workflows: ingest documents, compute embeddings, reindex, run evaluations, or process user requests in the background. Azure messaging/eventing helps you scale and decouple these workloads while keeping reliability (retries, dead-lettering) and traceability (correlation IDs).
+> **Exam domain:** Connect to and consume Azure services (**20–25%**)  
+> **File:** `04-speech.md`
 
-## What you should understand
-- When synchronous request/response is not enough (latency, throughput, long-running work).
-- How to design event-driven AI pipelines safely (idempotency, schema versioning, backpressure).
-- How to connect messaging with monitoring for troubleshooting.
+## In one sentence
+
+Long-running AI work — embedding thousands of docs, reindexing, batch evaluation — belongs in **async pipelines** built with **Azure Service Bus**, **Azure Event Grid**, and **Azure Functions**, with idempotent consumers, dead-letter handling, and correlation IDs end to end.
+
+## Why it exists
+
+Synchronous APIs break under bulk embedding jobs and burst traffic. AI-200 tests **event-driven architecture**: when to queue vs publish events, how Functions triggers/bindings fit, and how to keep pipelines reliable when AI calls are slow or rate-limited.
+
+## Service chooser
+
+| Need | Prefer |
+|------|--------|
+| Ordered work queue, competing consumers, retry/DLQ | **Azure Service Bus** (queues, topics/subscriptions) |
+| React to resource state changes, fan-out, lightweight events | **Azure Event Grid** (filters, custom events, retries) |
+| Serverless handler for HTTP/timer/queue events | **Azure Functions** (triggers + bindings) |
+
+```text
+  Producer (API, Logic App, storage event)
+              │
+      ┌───────┴───────┐
+      ▼               ▼
+ Service Bus      Event Grid
+ (work items)     (notifications)
+      │               │
+      └───────┬───────┘
+              ▼
+      Azure Functions / Container worker
+              │
+              ▼
+   Embed · index · notify · evaluate
+```
 
 ## Topics checklist
-- [ ] Choose messaging/eventing for async workloads (decouple producers/consumers)
-- [ ] Design event schemas (versioning, validation) to avoid breaking consumers
-- [ ] Correlation IDs end-to-end for traceability
-- [ ] Idempotent consumers (deduplication/upserts)
-- [ ] Retry strategy + dead-letter handling for poison messages
-- [ ] Backpressure/rate limiting concepts to protect downstream services
-- [ ] Ordering considerations (when ordering matters vs when it doesn't)
-- [ ] Safe retries for steps that call AI endpoints (avoid repeated side effects)
-- [ ] Distinguish batch processing vs streaming event processing
-- [ ] Test failure paths (timeouts, partial processing, consumer downtime)
+
+### Azure Service Bus
+- [ ] **Queues** for point-to-point work; **topics/subscriptions** for fan-out
+- [ ] **Dead-letter queue (DLQ)** for poison messages after max retries
+- [ ] Message **sessions** when ordering per entity matters (know the tradeoff)
+
+### Azure Event Grid
+- [ ] **Event-driven workflows** with system/custom events
+- [ ] **Filters** and **retry policies** for subscribers
+
+### Azure Functions
+- [ ] Build **serverless APIs** and workers with **triggers** (HTTP, timer, Service Bus, Event Grid)
+- [ ] **Bindings** for inputs/outputs (storage, Cosmos DB, etc.)
+- [ ] Configure and **deploy function apps** (settings, MI, scaling plan)
+
+### Pipeline reliability
+- [ ] **Correlation IDs** across producer → broker → consumer → AI call
+- [ ] **Idempotent consumers** (dedup keys, upserts)
+- [ ] **Backpressure** and concurrency limits to protect AI endpoints
+- [ ] **Schema versioning** for event payloads
+- [ ] Test failure paths: timeouts, malformed messages, consumer downtime
+
+## Key concepts
+
+### Idempotent consumer pattern
+
+```text
+  Message received (doc_id=v3)
+       │
+       ▼
+  Check processing ledger / etag
+       │
+   Already done? ──yes──► Complete message (no-op)
+       │
+       no
+       ▼
+  Process + upsert + Complete
+```
+
+⚠️ **Exam trap:** Retrying AI embedding calls without dedup → duplicate vectors and double cost.
+
+### Dead-letter workflow
+
+After max delivery attempts, move message to **DLQ**, alert, inspect payload, fix root cause, **resubmit** or discard. Never infinite retry on poison messages.
+
+### Functions in AI pipelines
+
+Common triggers:
+
+- **Service Bus** — process one document per message
+- **Event Grid** — Blob created → start ingestion
+- **HTTP** — lightweight API front door (often paired with queue for heavy work)
+
+Configure app settings and **managed identity** for downstream Cosmos DB / storage access — not secrets in `local.settings.json` committed to git.
 
 ## Exam-style practice (10 questions + answers)
-### Question 1
-You need to compute embeddings for thousands of documents. Why is messaging/eventing useful?
 
-**Answer (model):**
-It decouples ingestion from processing and lets you scale embedding computation asynchronously while smoothing load and handling failures with retries/dead-lettering.
+### Question 1
+Why use messaging to compute embeddings for thousands of documents?
+
+**Answer:**
+**Decouples** ingestion from processing, smooths load, scales workers independently, and supports **retries/DLQ** on failure.
 
 ### Question 2
-Your consumer occasionally processes the same event twice. What’s the safest pattern?
+Consumer processes the same event twice. Safest pattern?
 
-**Answer (model):**
-Make the consumer **idempotent**: use dedup keys, upsert semantics, and ensure repeated processing doesn’t duplicate outputs or double-apply side effects.
+**Answer:**
+**Idempotent consumer** — dedup key, upsert, processing ledger so replays don't duplicate side effects.
 
 ### Question 3
-What should you do with a message that keeps failing after retries?
+Message fails repeatedly after retries. What next?
 
-**Answer (model):**
-Move it to a **dead-letter** path and alert/inspect it. That prevents infinite retry loops and keeps the pipeline healthy.
+**Answer:**
+Send to **dead-letter queue**, alert, investigate payload/handler, fix and optionally resubmit.
 
 ### Question 4
-Why should event payload schemas be versioned?
+Why version event payload schemas?
 
-**Answer (model):**
-Because producers and consumers evolve at different times. Versioning prevents breaking changes from causing widespread consumer failures.
+**Answer:**
+Producers and consumers deploy independently; **versioning** prevents breaking changes from crashing consumers.
 
 ### Question 5
-Your AI endpoint calls are being rate-limited by spikes. How can messaging help?
+AI endpoint rate-limited during traffic spikes. How can messaging help?
 
-**Answer (model):**
-Queue/workload smoothing reduces spikes, and consumer rate limiting/backpressure can be used to keep concurrency within safe bounds.
+**Answer:**
+**Queue smoothing** + **limited consumer concurrency** / backpressure instead of unbounded synchronous calls.
 
 ### Question 6
-How do correlation IDs help in AI pipelines?
+Role of correlation IDs in AI pipelines?
 
-**Answer (model):**
-They let you link logs/traces across producer, message broker, and consumer so you can trace a request end-to-end during troubleshooting.
+**Answer:**
+Link logs/traces across **API → queue → function → model call** for end-to-end troubleshooting.
 
 ### Question 7
-What’s the key risk of retrying AI calls without careful design?
+Risk of blind retries on AI calls?
 
-**Answer (model):**
-You may repeat expensive work or trigger inconsistent results. Use idempotency/caching and handle partial failures so retries don’t create incorrect outputs.
+**Answer:**
+**Repeated expensive work** and inconsistent state — combine retries with idempotency and checkpointing.
 
 ### Question 8
-When might you avoid strict ordering guarantees?
+When can you skip strict message ordering?
 
-**Answer (model):**
-When updates are idempotent and you only care about final state (e.g., “latest document version” wins). Avoiding strict ordering improves throughput.
+**Answer:**
+When processing is **idempotent** and **last-write-wins** is acceptable (e.g., re-embedding latest doc version).
 
 ### Question 9
-You need to reindex after changing embeddings. Which pipeline approach is usually best?
+Reindex after embedding model change — typical approach?
 
-**Answer (model):**
-Trigger a reprocessing job via messaging/eventing (e.g., emit “reindex” events), keep it versioned, and validate before switching traffic.
+**Answer:**
+Emit **reprocess/reindex events** (or batch job via queue), version new index, validate, then **cut over**.
 
 ### Question 10
-How do you test an event-driven AI workflow for reliability?
+How test an event-driven AI workflow?
 
-**Answer (model):**
-Simulate failures: consumer downtime, timeouts, malformed messages, downstream AI errors. Verify retries, dead-letter behavior, and that outputs remain consistent.
+**Answer:**
+Simulate **consumer down**, timeouts, bad payloads, AI errors — verify retries, DLQ, and consistent final state.
 
+## What's next
+
+Module **05** packages and runs these backends on **Azure Container Registry**, **Container Apps**, and **AKS**.
+
+## Deep dive (examples & labs)
+
+- [Topic 08 — Service Bus & Event Grid](./topics_details/08-service-bus-event-grid.md)
+- [Topic 09 — Azure Functions](./topics_details/09-azure-functions-serverless.md)
+- [Lab 04 — Bus + Functions pipeline](./topics_details/labs/04-service-bus-functions-pipeline.md)

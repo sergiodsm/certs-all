@@ -1,84 +1,148 @@
-# Azure AI Cloud Developer Associate: Azure Data Management for AI Solutions
+# Module 02 — Azure Data Management for AI Solutions
 
-For AI apps, “data management” means everything around your data: where it lives, how it gets ingested, cleaned, versioned, secured, and prepared for model calls (including retrieval/indexing pipelines).
+> **Exam domain:** Develop AI solutions by using Azure data management services (**25–30%**)  
+> **File:** `02-language-conversational.md`
 
-This is the part of AZ-204 that maps to AI: reliable backend data pipelines that feed your AI services.
+## In one sentence
 
-## What you should understand
-- Data ingestion and transformation workflows that support AI features.
-- Data governance basics: PII handling, retention, and secure access patterns.
-- How to design for updates/deletes/reprocessing (so your AI doesn’t use stale data).
+AI backends need the right **data plane**: **Cosmos DB for NoSQL + vectors**, **Azure Database for PostgreSQL with pgvector**, and **Azure Managed Redis** for cache and low-latency vector search — each with indexing, consistency, and sizing choices that affect cost and latency.
+
+## Why it exists
+
+This is the **largest weighted domain** on AI-200. The exam tests whether you can connect with SDKs, tune queries/RUs, store embeddings, run similarity search, process change feeds, and size resources for vector workloads — not just "use a vector DB."
+
+## Service map (exam focus)
+
+| Service | AI-200 highlights |
+|---------|-------------------|
+| **Azure Cosmos DB for NoSQL** | SDK queries, indexing policies, consistency levels, RU optimization, **vector similarity search**, **change feed** for incremental sync |
+| **Azure Database for PostgreSQL** | Schema design, **pgvector** indexes, semantic search, **RAG with metadata filters**, compute/memory for vectors, connection pooling |
+| **Azure Managed Redis** | Cache TTL/invalidation, **vector indexing** for similarity search, low-latency retrieval |
 
 ## Topics checklist
-- [ ] Plan data sources and ownership (batch vs streaming, expected update frequency)
-- [ ] Build an ingestion/transformation pipeline (ETL/ELT-style thinking)
-- [ ] Normalize data formats into model-ready inputs (schemas, validation)
-- [ ] Handle incremental updates and backfills safely
-- [ ] Support deletes/updates so retrieval doesn’t return removed content
-- [ ] Store and use metadata needed for filtering/ranking
-- [ ] Prepare text/image data for downstream AI steps (e.g., chunking for embeddings)
-- [ ] PII/privacy patterns (minimize storage, redact before logging/indexing)
-- [ ] Secure access to storage/DB (managed identity / RBAC)
-- [ ] Data lineage/versioning so you can reproduce outputs
+
+### Cosmos DB for NoSQL
+- [ ] Connect and query with the **Python SDK**
+- [ ] Tune **indexing policies** and **consistency levels** for read cost vs freshness
+- [ ] Store embeddings; run **vector similarity search**
+- [ ] Implement **change feed processor** for new/updated items (keep indexes fresh)
+
+### Azure Database for PostgreSQL
+- [ ] Connect/query via SDK or drivers with secure auth
+- [ ] Model tables, choose types, design **pgvector** indexes (IVFFlat/HNSW — know tradeoffs exist)
+- [ ] Optimize vector query latency; right-size **compute, memory, storage**
+- [ ] Implement **RAG** patterns with **metadata filtering**
+- [ ] **Connection optimization** (pooling, limits) for throughput
+
+### Azure Managed Redis
+- [ ] Cache with expiration and **invalidation** strategy
+- [ ] **Vector indexing** for similarity search at the edge of hot paths
+
+### Cross-cutting data pipeline
+- [ ] Incremental updates, backfills, and **delete propagation** to derived indexes
+- [ ] PII minimization before storage/logging
+- [ ] Data lineage/versioning for reproducibility
+
+## Key concepts
+
+### Cosmos DB: consistency vs cost
+
+| Consistency | Use when |
+|-------------|----------|
+| Strong | Reads must reflect latest write globally (higher latency/cost) |
+| Session | Default for many apps; consistent within a session |
+| Eventual | Highest read throughput; stale reads acceptable |
+
+⚠️ **Exam trap:** Using the wrong consistency for "must read my own write" scenarios.
+
+### Change feed → AI index sync
+
+When documents change in Cosmos DB, a **change feed processor** emits create/update/delete events so your embedding pipeline reprocesses only what changed — avoiding full reindex on every update.
+
+### PostgreSQL + pgvector for RAG
+
+Typical pattern:
+
+1. Store document chunks + embedding column + **metadata** (tenant, doc type, ACL)
+2. Query: embed user question → `ORDER BY embedding <=> query_vector LIMIT k` with **WHERE tenant_id = @t**
+3. Pass top chunks to the model with citation metadata
+
+Size **compute and memory** for vector dimensions and index type; monitor query latency as data grows.
+
+### Redis: cache vs vector index
+
+- **Cache:** Session results, embedding lookups, rate-limit counters — always define TTL and invalidation on source updates.
+- **Vector index:** Hot, low-latency retrieval layer; not a substitute for authoritative document storage.
 
 ## Exam-style practice (10 questions + answers)
-### Question 1
-You’re building an AI feature over documents stored in Azure Blob Storage. What’s the most important first step in the data pipeline?
 
-**Answer (model):**
-Define the ingestion and transformation plan: document-to-model-ready steps, including schema/validation and metadata extraction, before you generate embeddings or call AI services.
+### Question 1
+You're building an AI feature over documents in Cosmos DB. Most important first pipeline step?
+
+**Answer:**
+Define **ingestion → chunk → embed → index** with schema validation and metadata extraction before calling embedding or inference services.
 
 ### Question 2
-Your data changes daily. How do you avoid the “stale index” problem for retrieval-based answers?
+Data changes daily. How avoid a stale retrieval index?
 
-**Answer (model):**
-Implement an update strategy: incremental ingestion + reprocessing of only changed content, and ensure your index/derived artifacts are updated (including handling deletions).
+**Answer:**
+**Incremental updates** via change feed or comparable sync, reprocess changed items only, and **remove** embeddings when source documents are deleted.
 
 ### Question 3
-Your organization prohibits storing raw PII in analytics logs. What should you do before data reaches logs or index structures?
+Org policy forbids raw PII in analytics. What do before indexing?
 
-**Answer (model):**
-Apply **PII minimization/redaction** early in the pipeline: detect and remove/replace sensitive fields before logging and before storing content used for retrieval (or store only non-sensitive derivatives).
+**Answer:**
+**Detect and redact/minimize PII** early — before logs, embeddings, or retrieval stores.
 
 ### Question 4
-Why is it useful to store metadata alongside AI embeddings/vector entries?
+Why store metadata alongside embeddings?
 
-**Answer (model):**
-Metadata enables filtering (e.g., by tenant, document type, date), improves answer relevance, and supports governance/auditing by linking retrieved content back to original sources.
+**Answer:**
+Enables **filtering** (tenant, type, date), improves relevance, and supports **audit/citations** back to source documents.
 
 ### Question 5
-You discover the ingestion pipeline occasionally duplicates records. What’s a backend-safe mitigation?
+Ingestion occasionally duplicates records. Safe mitigation?
 
-**Answer (model):**
-Use idempotent ingestion: dedup keys (e.g., document ID + version), upsert semantics, and correlation IDs so reruns don’t create duplicates or double-charge downstream processing.
+**Answer:**
+**Idempotent ingestion** with natural keys (document ID + version), upsert semantics, and dedup on replay.
 
 ### Question 6
-How do you design for “backfill” when you improve your chunking strategy?
+You improve chunking strategy. How design the backfill?
 
-**Answer (model):**
-Treat it as a versioned reprocessing job: re-run transformation from a known input version, generate new derived artifacts under a new version, and then switch traffic only after validation.
+**Answer:**
+**Versioned reprocessing job**: regenerate derived artifacts under a new version, validate, then cut over traffic.
 
 ### Question 7
-Your AI pipeline fails halfway through processing a large dataset. What should the pipeline support?
+Pipeline fails halfway through a large batch. What must it support?
 
-**Answer (model):**
-Checkpointing and retryability: the ability to resume safely (at chunk/document boundaries) without corrupting outputs or producing inconsistent duplicates.
+**Answer:**
+**Checkpointing** and safe resume at document/chunk boundaries without corrupt or duplicate outputs.
 
 ### Question 8
-Why should your backend validate data schemas before sending data to AI services?
+Why validate schemas before sending data to AI services?
 
-**Answer (model):**
-Validation prevents malformed inputs from causing wasted cost, confusing model errors, or broken downstream logic. It also improves observability because you can catch issues at ingestion time.
+**Answer:**
+Prevents wasted cost, confusing model errors, and broken downstream logic; failures surface at ingestion time.
 
 ### Question 9
-For large inputs, what’s a general approach to prepare them for embedding/retrieval pipelines?
+Cosmos DB RU costs spike on vector queries. What levers exist?
 
-**Answer (model):**
-Chunk and batch: split inputs into appropriately sized units with overlap as needed, and process in controlled batches so latency, memory, and costs remain manageable.
+**Answer:**
+Review **indexing policy**, query patterns, partition key design, consistency level, and item size; optimize hot queries and consider dedicated vector index configuration.
 
 ### Question 10
-How do you keep your AI app reproducible when models or prompts change?
+When prefer Redis vector indexing vs PostgreSQL pgvector for a hot retrieval path?
 
-**Answer (model):**
-Version the artifacts: log which input data version produced which embeddings/index entries, and correlate them with the model/prompt/deployment version used for inference.
+**Answer:**
+Redis when you need **extremely low latency** on a bounded, frequently accessed corpus with cache-style lifecycle; PostgreSQL when you need **relational metadata, complex filters, and authoritative storage** in one system. (Exam: know Redis implements vector indexing for similarity search — not only key-value cache.)
 
+## What's next
+
+Module **03** goes deeper on retrieval design: chunking, hybrid search, grounding, and evaluation — the RAG layer on top of these data services.
+
+## Deep dive (examples & labs)
+
+- [Topic 02 — Cosmos DB for NoSQL AI](./topics_details/02-cosmos-db-nosql-ai.md)
+- [Topic 03 — PostgreSQL + pgvector](./topics_details/03-postgresql-pgvector-rag.md)
+- [Topic 04 — Azure Managed Redis](./topics_details/04-azure-managed-redis.md)
+- [Labs 02–03](./topics_details/labs/02-cosmos-vector-change-feed.md)

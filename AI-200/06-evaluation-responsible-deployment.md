@@ -1,82 +1,163 @@
-# Azure AI Cloud Developer Associate: Monitoring, Troubleshooting, Security & Responsible AI
+# Module 06 — Monitoring, Troubleshooting, Security & Responsible AI
 
-The exam explicitly calls out that you must **secure, monitor, and troubleshoot Azure solutions**. For AI-enabled backends, that means more than uptime: you need telemetry for AI calls, safe handling of sensitive data, and quality/safety regression checks when you change prompts, retrieval, or models.
+> **Exam domain:** Secure, monitor, and troubleshoot Azure solutions (**20–25%**)  
+> **File:** `06-evaluation-responsible-deployment.md`
 
-## What you should understand
-- Operational excellence: logs/metrics/traces, alerts, and fast root-cause analysis.
-- Security: least privilege, safe secret handling, and protecting data flows.
-- Responsible AI patterns: reduce harmful outputs, mitigate prompt injection, and avoid sensitive data leakage.
+## In one sentence
+
+Production AI backends need **Key Vault** for secrets, **App Configuration** for settings, **OpenTelemetry** for distributed traces, **KQL** for log analysis — plus governance that treats models and retrieved text as **untrusted** and keeps PII out of telemetry.
+
+## Why it exists
+
+AI-200 bundles **security + observability** into ~25% of the exam. You must secure secrets, centralize config, trace multi-hop AI requests, query logs with KQL, and apply responsible-AI controls when prompts, retrieval, or models change.
+
+## Operations stack
+
+```text
+  App (container/function)
+       │
+       ├──► Key Vault (secrets, rotation)
+       ├──► App Configuration (feature flags, settings)
+       └──► OpenTelemetry SDK ──► Azure Monitor / Log Analytics
+                                      │
+                                      ▼
+                                 KQL queries
+                                 (errors, latency, 429s)
+```
 
 ## Topics checklist
-- [ ] Instrument your AI backend (structured logs, request IDs, model call durations)
-- [ ] Monitoring signals: errors/timeouts, latency percentiles, rate limiting events
-- [ ] Alerting strategy (what to alert on to detect failures early)
-- [ ] Troubleshooting workflow (trace from failing request to downstream dependency)
-- [ ] Offline evaluation vs online monitoring (quality vs production telemetry)
-- [ ] Regression testing for changes (prompts, retrieval/indexing, model upgrades)
-- [ ] Prompt injection mitigation concepts (treat retrieved text as data)
-- [ ] Content safety controls (input/output constraints, safe fallbacks)
-- [ ] PII handling and auditability (minimize logging; retention choices)
-- [ ] Security fundamentals (RBAC, managed identity, avoid over-privileged access)
+
+### Implement secure Azure solutions
+- [ ] **Azure Key Vault** — store/retrieve secrets, **rotation**
+- [ ] **Azure App Configuration** — centralized settings, feature flags, refresh without redeploy
+
+### Monitor and troubleshoot
+- [ ] **OpenTelemetry SDKs** for distributed tracing (spans per pipeline step)
+- [ ] **KQL** queries on logs/metrics — errors, latency percentiles, dependency failures
+- [ ] Alerting on SLO breaches (error rate, p95 latency, DLQ depth)
+
+### AI-specific operations
+- [ ] Version **prompts**, **models/deployments**, and **index** artifacts
+- [ ] **Offline evaluation** before prompt/retrieval/model changes
+- [ ] **Online monitoring** — quality proxies, failure rates, safety filter triggers
+- [ ] **Prompt injection** mitigation — retrieved content is data, not instructions
+- [ ] **Content safety** — input/output filtering, escalation paths
+- [ ] **PII** minimization in logs/traces; retention and RBAC on telemetry stores
+
+## Key concepts
+
+### Key Vault vs App Configuration
+
+| Store | Use for |
+|-------|---------|
+| **Key Vault** | Secrets, keys, certificates — rotation, access policies/RBAC |
+| **App Configuration** | Non-secret settings, labels per environment, feature toggles |
+
+⚠️ **Exam trap:** Putting connection strings in App Configuration without Key Vault references when they are secrets.
+
+### OpenTelemetry span model for AI requests
+
+Typical spans: `http.request` → `retrieve` → `embed` → `llm.chat` → `persist`. Each records duration, status, and attributes (deployment ID, token count — not raw prompt text).
+
+### Sample KQL patterns (conceptual)
+
+```kusto
+// Error spike on AI dependency
+traces
+| where timestamp > ago(1h)
+| where cloud_RoleName == "ai-api"
+| where success == false
+| summarize count() by operation_Name, resultCode
+```
+
+```kusto
+// p95 latency for model calls
+dependencies
+| where name contains "openai" or name contains "cognitive"
+| summarize percentile(duration, 95) by bin(timestamp, 5m)
+```
+
+Know **KQL** basics: `where`, `summarize`, `join`, time ranges (`ago`), and filtering on `cloud_RoleName`, `operation_Name`, `success`.
+
+### Responsible AI in backend systems
+
+| Risk | Mitigation |
+|------|------------|
+| Prompt injection via RAG | System prompt isolation; delimit retrieved text; filter sources |
+| Harmful outputs | Content safety APIs, output policies, human review thresholds |
+| PII leakage | Redact at ingest and in logs; minimize retention |
+| Quality regression | Offline eval + canary + version tags in traces |
 
 ## Exam-style practice (10 questions + answers)
-### Question 1
-What telemetry fields are most helpful for debugging an AI request in production?
 
-**Answer (model):**
-Include a correlation/request ID, timestamps, which steps were executed, downstream dependency status (AI endpoint, retrieval/vector search), error codes, and timing (latency) per step.
+### Question 1
+Most useful telemetry for debugging one AI request in production?
+
+**Answer:**
+**Correlation/request ID**, timestamps, per-step status (retrieve, model, DB), error codes, **latency per step** — not full prompt text.
 
 ### Question 2
-Why is offline evaluation important even if you monitor production?
+Why offline evaluation if you already monitor production?
 
-**Answer (model):**
-Because production metrics can be biased by traffic and don’t always provide ground truth. Offline evaluation lets you test known scenarios and catch regressions before impact.
+**Answer:**
+Production lacks **ground truth** and reflects biased traffic. Offline sets catch regressions **before** user impact.
 
 ### Question 3
-How do you reduce the risk that your RAG system follows malicious instructions from retrieved content?
+Reduce risk of RAG following malicious instructions in retrieved docs?
 
-**Answer (model):**
-Use instruction separation and treat retrieved passages as **data**. Add retrieval filtering and safety constraints so the model doesn’t treat untrusted content as authoritative instructions.
+**Answer:**
+**Separate instructions from data**, delimit untrusted passages, filter sources, apply safety policies — never treat retrieval as system instructions.
 
 ### Question 4
-Your logs show prompt text and user queries containing sensitive data. What should you change?
+Logs contain raw prompts with sensitive data. What to change?
 
-**Answer (model):**
-Stop logging sensitive raw content. Implement redaction/minimization and log only what’s necessary for troubleshooting, with strict access controls and clear retention policies.
+**Answer:**
+**Redact/minimize** logged content, strict access controls, defined **retention**, log IDs/hashes instead of raw text where possible.
 
 ### Question 5
-What’s the safest production behavior when monitoring detects a spike in model failures?
+Spike in model failures in monitoring. Safest production response?
 
-**Answer (model):**
-Degrade gracefully: reduce concurrency, use backoff, fall back to safer responses, and alert. Avoid cascading failures by limiting calls to downstream AI services.
+**Answer:**
+**Graceful degradation** — reduce concurrency, backoff, safer fallbacks, alert — prevent cascade to dependencies.
 
 ### Question 6
-You shipped a new prompt and some answers became worse. What should you have logged/versioned to investigate?
+New prompt shipped; answers worsened. What should have been versioned?
 
-**Answer (model):**
-Log/version the prompt (or prompt template) version, retrieval/index versions, and the model/deployment version. Then correlate those versions to affected requests via traces.
+**Answer:**
+**Prompt template version**, model/deployment ID, retrieval/index version — correlated in traces to affected requests.
 
 ### Question 7
-What does “least privilege” practically mean for an AI backend?
+"Least privilege" for an AI backend identity?
 
-**Answer (model):**
-Give the backend identity only the minimum permissions it needs (to call required services and access required data), and avoid using broad admin permissions.
+**Answer:**
+Grant only RBAC needed (e.g., Cosmos DB data plane read, specific Key Vault secret get) — no broad Owner/Contributor on subscription.
 
 ### Question 8
-How can you measure and reduce quality regressions after changing retrieval?
+Measure retrieval change before full rollout?
 
-**Answer (model):**
-Run retrieval regression tests and quality evaluation on a representative dataset, compare metrics (relevance/grounding/safety), and ship changes behind a controlled rollout if possible.
+**Answer:**
+**Offline regression tests** on representative queries; compare relevance/grounding; canary if available.
 
 ### Question 9
-When should you trigger human review/escalation in an AI system?
+When trigger human review?
 
-**Answer (model):**
-When outputs are high-risk, policy-sensitive, or confidence/quality is below thresholds—especially when the cost of being wrong is high.
+**Answer:**
+High-risk domains, policy-sensitive content, or **confidence/quality below threshold** when error cost is high.
 
 ### Question 10
-What’s a good troubleshooting flow when a containerized AI backend times out?
+Troubleshooting flow for containerized AI backend timeout?
 
-**Answer (model):**
-Start with the correlation ID/trace: confirm request arrival, check container health, then drill into downstream AI endpoint latency/timeouts and network/dependency errors to find the exact failing step.
+**Answer:**
+Follow **correlation ID** → ingress received? → container healthy? → dependency span (model/DB/queue) → network/auth errors on failing hop.
 
+## Course complete
+
+Review weak modules, run instructor **mock mode** via [`AI-200-INSTRUCTOR.md`](./AI-200-INSTRUCTOR.md), then schedule AI-200 when you consistently score ≥8/10 on each module's practice set.
+
+## Deep dive (examples & labs)
+
+- [Topic 10 — Key Vault & App Configuration](./topics_details/10-key-vault-app-configuration.md)
+- [Topic 11 — OpenTelemetry & KQL](./topics_details/11-opentelemetry-kql-troubleshooting.md)
+- [Topic 12 — Responsible AI in production](./topics_details/12-responsible-ai-production.md)
+- [Lab 06 — Key Vault + KQL](./topics_details/labs/06-keyvault-telemetry-kql.md)
+- [Exam traps](./topics_details/reference/exam-traps.md) · [Scenarios](./topics_details/examples/scenarios-walkthrough.md)

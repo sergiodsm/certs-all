@@ -1,82 +1,152 @@
-# Azure AI Cloud Developer Associate: Containerized Solutions on Azure (Deploy & Scale)
+# Module 05 — Containerized Solutions on Azure (Deploy & Scale)
 
-This topic is where AZ-204 expertise strongly applies: you must deploy AI-enabled backends as containerized apps, manage environments, scale, and operate safely. The goal is to make your AI service reliable under load and easy to troubleshoot.
+> **Exam domain:** Develop containerized solutions on Azure (**20–25%**)  
+> **File:** `05-generative-rag.md`
 
-## What you should understand
-- How to package your Python backend as a container.
-- How to configure settings/secrets via environment and identity (not baked-in code).
-- How to scale and operate using health checks and observability.
+## In one sentence
+
+Ship your Python AI backend as **containers**: build and store images in **Azure Container Registry (ACR)**, run on **Azure App Service**, **Azure Container Apps**, or **AKS**, scale with **KEDA**, and troubleshoot via logs, events, and connectivity checks — with secrets outside the image.
+
+## Why it exists
+
+AI-200 replaces generic AZ-204 container trivia with **operational scenarios**: ACR tasks, revision management in Container Apps, KEDA event-driven scaling, AKS manifests, and inspecting production failures.
+
+## Hosting options (exam map)
+
+| Capability | Azure services |
+|------------|----------------|
+| Build/store/version images | **Azure Container Registry**, **ACR Tasks** |
+| Simple container hosting + env/secrets | **Azure App Service** (containers) |
+| Serverless containers, revisions, KEDA | **Azure Container Apps** |
+| Full Kubernetes control | **Azure Kubernetes Service (AKS)** + manifests |
+
+```text
+  Code + Dockerfile
+        │
+        ▼
+   ACR (build/push/tag)
+        │
+   ┌────┴────┬────────────┐
+   ▼         ▼            ▼
+App Service  Container Apps   AKS
+             (+ KEDA scale)
+```
 
 ## Topics checklist
-- [ ] Dockerize your Python AI backend (dependencies, build, runtime)
-- [ ] Store secrets/config outside the image (managed identity, env/config services)
-- [ ] Use health checks (readiness/liveness) so traffic only hits healthy instances
-- [ ] Configure networking safely (inbound rules, private access patterns when needed)
-- [ ] Scale out/in based on workload (autoscaling concepts)
-- [ ] Version deployments (immutable images; rollout/rollback strategy)
-- [ ] Ensure your container supports graceful shutdown (finish in-flight requests)
-- [ ] Instrument logs/metrics/traces for operations
-- [ ] Handle startup dependencies (AI endpoint reachability, token acquisition)
-- [ ] Cost awareness (scale-to-demand, avoid busy-waiting and excessive concurrency)
+
+### Container application hosting
+- [ ] Build, store, version images in **ACR**
+- [ ] Build/run with **ACR Tasks**
+- [ ] Deploy to **App Service** with env vars and secrets (Key Vault references)
+
+### Container-orchestrated solutions
+- [ ] Deploy to **Container Apps** — environments, **revisions**, traffic splitting
+- [ ] **KEDA** event-driven autoscaling (e.g., queue depth → replica count)
+- [ ] Deploy/manage on **AKS** using **manifest files**
+- [ ] Monitor/troubleshoot: container logs, events, **connectivity** (DNS, egress, private endpoints)
+
+### Operations
+- [ ] **Readiness/liveness** probes — don't route to starting instances
+- [ ] **Graceful shutdown** for in-flight AI requests
+- [ ] **Managed identity** for Azure resource access from containers
+- [ ] Immutable deployments — roll forward/back via image tags/revisions
+- [ ] Cost control: right-size CPU/memory, autoscale bounds, concurrency limits
+
+## Key concepts
+
+### Secrets and config
+
+| Bad | Good |
+|-----|------|
+| API keys baked into image | **Managed identity** + Key Vault / App Configuration |
+| Different images per env | Same image, different **runtime env/config** |
+
+### Container Apps + KEDA
+
+Scale replicas based on **custom metrics** — e.g., Service Bus queue length or HTTP concurrency — so embedding workers grow under load and shrink when idle.
+
+⚠️ **Exam trap:** Scaling on CPU alone while work is **queue-backed** — KEDA on queue depth is the exam-aligned pattern.
+
+### AKS troubleshooting flow
+
+1. `kubectl get pods` / events — CrashLoopBackOff? Image pull errors?
+2. Pod logs — application exceptions, auth failures to Cosmos DB
+3. Service/network — can pod reach AI endpoint? DNS? NSG/firewall?
+4. End-to-end trace — correlation ID from ingress to model call
+
+### Health probes
+
+- **Liveness** — restart if deadlocked
+- **Readiness** — remove from load balancer until dependencies (token provider, config) are ready
 
 ## Exam-style practice (10 questions + answers)
-### Question 1
-Why should you avoid hard-coding secrets into a container image?
 
-**Answer (model):**
-Because images are widely distributed and may be stored longer than needed. Put secrets/config outside the image (managed identity/env/config) to reduce exposure.
+### Question 1
+Why avoid hard-coding secrets in container images?
+
+**Answer:**
+Images are copied and long-lived; secrets in layers **expand breach blast radius**. Use MI, Key Vault, or platform secret injection.
 
 ### Question 2
-What’s the purpose of a readiness probe in a containerized app?
+Purpose of a **readiness** probe?
 
-**Answer (model):**
-Readiness indicates when the app is able to serve traffic. It prevents routing requests to instances that aren’t fully initialized.
+**Answer:**
+Signals when the instance can **accept traffic** — prevents routing to containers still starting or missing config.
 
 ### Question 3
-Your app needs a model endpoint available at startup. What’s a safe approach?
+Model endpoint unavailable at startup. Safe approach?
 
-**Answer (model):**
-Fail fast with clear errors (or degrade gracefully) and rely on readiness probes + retries/backoff in startup logic so the system self-recovers rather than serving broken behavior.
+**Answer:**
+Startup checks + **readiness** failure (not ready), retries/backoff; optionally degrade features — don't serve silently broken responses.
 
 ### Question 4
-How can you safely roll out an updated model integration without breaking clients?
+Roll out updated model integration without breaking clients?
 
-**Answer (model):**
-Use an immutable deployment strategy and keep the external API contract stable. Version internal model/deployment behavior behind the same endpoint, and run validation before full rollout.
+**Answer:**
+**Immutable revision/image** deploy, stable external API contract, validate new revision (traffic split/canary) before full cutover.
 
 ### Question 5
-Why does graceful shutdown matter for AI backends?
+Why **graceful shutdown** for AI backends?
 
-**Answer (model):**
-To avoid dropping in-flight requests (which can cause user-facing failures and inconsistent outputs). Graceful shutdown lets the app complete work or fail cleanly.
+**Answer:**
+Completes or cleanly cancels **in-flight requests** instead of dropping them mid-inference.
 
 ### Question 6
-Your AI endpoint rate limits you during traffic spikes. What container-level approaches help?
+Rate limits during traffic spikes — container-level mitigations?
 
-**Answer (model):**
-Reduce request fan-out by limiting concurrency, implement backpressure at the API layer, and scale based on queue/workload rather than raw inbound traffic.
+**Answer:**
+Limit **per-instance concurrency**, queue heavy work, autoscale on **meaningful signals** (KEDA/queue depth), not unbounded fan-out.
 
 ### Question 7
-How do you enable managed identity-style auth for a containerized workload?
+Enable managed identity auth from a containerized workload?
 
-**Answer (model):**
-Bind the app/container identity to the platform-managed identity and request tokens at runtime using the environment-provided credentials (rather than storing static keys in the image).
+**Answer:**
+Assign **user-assigned or system MI** to the hosting resource (Container App, AKS pod identity/workload ID) and grant RBAC on target services.
 
 ### Question 8
-What’s a practical strategy for debugging production issues in containers?
+Debug production timeouts in containers?
 
-**Answer (model):**
-Use structured logs plus distributed tracing/telemetry. Correlation IDs and request IDs help you connect failures to specific model calls and downstream dependencies.
+**Answer:**
+**Structured logs + distributed traces**, correlation IDs, dependency latency breakdown (AI, DB, queue).
 
 ### Question 9
-Why is configuration via environment variables preferred for dev/test/prod?
+Why environment variables for dev/test/prod config?
 
-**Answer (model):**
-Because you can deploy the same image to different environments and only change runtime configuration, reducing risky code changes.
+**Answer:**
+**One image, many environments** — change runtime settings without rebuilding.
 
 ### Question 10
-How do you keep costs under control when running containerized AI services?
+Control costs for containerized AI services?
 
-**Answer (model):**
-Right-size and autoscale, avoid unnecessary parallelism, use caching where appropriate, and ensure failed/retried requests don’t create runaway compute usage.
+**Answer:**
+Autoscale bounds, concurrency caps, caching, avoid retry storms, scale-to-zero where latency SLO allows (Container Apps + KEDA).
 
+## What's next
+
+Module **06** covers **Key Vault**, **App Configuration**, **OpenTelemetry**, **KQL**, and responsible AI operations.
+
+## Deep dive (examples & labs)
+
+- [Topic 06 — ACR & App Service](./topics_details/06-acr-app-service-containers.md)
+- [Topic 07 — Container Apps, KEDA & AKS](./topics_details/07-container-apps-keda-aks.md)
+- [Lab 05 — Container Apps deploy](./topics_details/labs/05-container-apps-deploy.md)
