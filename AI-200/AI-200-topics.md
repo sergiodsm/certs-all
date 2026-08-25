@@ -3,6 +3,7 @@
 Developer-focused study materials for **Exam AI-200: Developing AI Cloud Solutions on Azure**.
 
 > **Start here:** [topics_details/README.md](./topics_details/README.md) — full guide with explanations, examples, and labs  
+> **Cursor study brief:** [README_CURSOR.md](./README_CURSOR.md) — skills, topics, 40 validated MCQs  
 > **AI tutor:** [AI-200-INSTRUCTOR.md](./AI-200-INSTRUCTOR.md)
 
 ---
