@@ -82,6 +82,52 @@ and corrected the following:
 
 ---
 
+## Study order: hardest → easiest
+
+Difficulty here is **how hard the topic is to study and keep straight on exam day** — not exam
+weight. Weight still matters: spend extra time on anything that is both hard *and* high-scoring.
+
+Study the hard topics first while attention is high. Revisit them after the easy ones so the
+gotchas stick. Daily Copilot users can skim Topics 5–6; almost nobody should skim Topics 2, 3,
+or 7.
+
+| Rank | Difficulty | Topic | Weight | Why it is this hard (or easy) |
+|------|------------|-------|--------|-------------------------------|
+| 1 | Hardest | [Topic 2 — Features: IDE, Chat & Modes](#topic-2) | 25–30% | Huge product surface. Agent vs Edits vs Plan, MCP, Sub-Agents, Spaces, Spark, PR summaries, instructions files, prompt files, Chat commands. Names evolve; mode-selection traps are frequent. |
+| 2 | Very hard | [Topic 7 — Privacy, exclusions & safeguards](#topic-7) | 10–15% | Highest *gotcha density*. Exclusions do **not** fully apply to Agent/CLI; public-code filter naming; ownership vs responsibility; plan-tier gating; troubleshooting. Easy to overgeneralize. |
+| 3 | Hard | [Topic 3 — Features: CLI & org administration](#topic-3) | 25–30% | Separate CLI install + different data rules. Org policies, Code Review policies, audit logs, REST API for subscriptions. Many candidates never see the admin UI. |
+| 4 | Hard | [Topic 4 — Data and architecture](#topic-4) | 10–15% | Abstract pipeline: prompt building → proxy filtering → model → post-processing → lifecycle. Retention/training depends on **plan + surface**; CLI/Agent ≠ IDE. Absolutist answers fail. |
+| 5 | Moderate | [Topic 5 — Prompt engineering](#topic-5) | 10–15% | Small, stable concept set (structure, context, zero-shot vs few-shot, iteration, chat history). Overlaps Topic 2 on prompt/instructions files. Daily users already know most of it. |
+| 6 | Easier | [Topic 1 — Responsible AI](#topic-1) | 15–20% | Short fact set: validate output, human accountability, hallucination, harms/mitigations, fairness vs inclusiveness. Concepts are simple; the trap is treating it as isolated trivia instead of a lens on every other domain. |
+| 7 | Easiest | [Topic 6 — Developer productivity](#topic-6) | 10–15% | Maps to daily work: generate, refactor, docs, tests, sample data, legacy modernization, security/perf. Main trap (“tests passed ⇒ ship”) is really a Topic 1 overlay. |
+
+### What to drill on the hard topics
+
+1. **Topic 2** — Pick the right *surface* for the job (inline / Chat / Edits / Agent / CLI). Know
+   MCP, Sub-Agents, instructions files vs prompt files, and what org policy can turn off.
+2. **Topic 7** — Content exclusions: what they stop, **where they do not apply**, and that they
+   are not a secret vault. Public-code matching = **Block**. GitHub does **not** claim ownership
+   of suggestions; you remain responsible.
+3. **Topic 3** — CLI is installed separately. Org/Enterprise: feature policies, Code Review
+   policies, audit logs, subscription REST API. Recite plan-tier differences from memory.
+4. **Topic 4** — Draw the suggestion lifecycle once from memory. Never pick “all plans train on
+   private code” or “nothing is ever retained.” Check current docs for plan + surface.
+
+### Suggested pass order (not the official outline order)
+
+```text
+Pass 1 (depth):  Topic 2 → Topic 7 → Topic 3 → Topic 4
+Pass 2 (faster): Topic 5 → Topic 1 → Topic 6
+Pass 3 (mix):    miss-log from the question banks + exam traps
+```
+
+Weight reminder: Topics 2 + 3 together are ~50% of the exam. Topic 1 is the next largest
+(15–20%). Do not confuse “easier to study” with “safe to skip.”
+
+---
+
+<a id="topic-1"></a>
+
 ## Topic 1 — Use GitHub Copilot Responsibly (15–20%)
 
 **Q1.** A developer accepts a Copilot-generated SQL query and deploys it straight to production.
@@ -183,6 +229,8 @@ validate, oversee agents, respect licensing and privacy.
 
 ---
 
+<a id="topic-2"></a>
+
 ## Topic 2 — Use GitHub Copilot Features: IDE, Chat & Modes (25–30%)
 
 **Q11.** What are the four primary ways to trigger Copilot in the IDE per the official outline?
@@ -277,6 +325,8 @@ code-review behavior stay consistent — related to **prompt file reuse**.
 availability is governed by org policy.
 
 ---
+
+<a id="topic-3"></a>
 
 ## Topic 3 — Use GitHub Copilot Features: CLI & Org Administration (25–30%)
 
@@ -378,6 +428,8 @@ web search) sit at the **Enterprise** tier; the basics exist on every plan.
 
 ---
 
+<a id="topic-4"></a>
+
 ## Topic 4 — Understand GitHub Copilot Data and Architecture (10–15%)
 
 **Q31.** In the Copilot request pipeline, where does the **proxy** sit?
@@ -475,6 +527,8 @@ public-code matching), then delivered. The proxy is on both legs.
 
 ---
 
+<a id="topic-5"></a>
+
 ## Topic 5 — Apply Prompt Engineering and Context Crafting (10–15%)
 
 **Q41.** What does **zero-shot** prompting mean?
@@ -569,6 +623,8 @@ suggestions.
 
 ---
 
+<a id="topic-6"></a>
+
 ## Topic 6 — Improve Developer Productivity (10–15%)
 
 **Q51.** Which is the strongest **unit-test** prompt?
@@ -660,6 +716,8 @@ human owns the merge decision.
 coverage they claim.
 
 ---
+
+<a id="topic-7"></a>
 
 ## Topic 7 — Configure Privacy, Content Exclusions, and Safeguards (10–15%)
 
