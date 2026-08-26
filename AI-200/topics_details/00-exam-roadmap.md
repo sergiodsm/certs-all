@@ -22,6 +22,21 @@ Official study guide: [Microsoft Learn — AI-200](https://learn.microsoft.com/e
 
 ---
 
+## Hardest vs easiest (study first)
+
+Difficulty is how hard the topic is to **keep straight on exam day**, not exam weight. Full table: [README_CURSOR.md §4](../README_CURSOR.md#4-hardest-and-easiest-topics-study-order).
+
+| Study first (hard) | Study later (easier) |
+|--------------------|----------------------|
+| Cosmos DB (RUs, vectors, change feed) | ACR + App Service containers |
+| PostgreSQL + pgvector RAG | Managed Redis (cache + vector index) |
+| Container Apps / KEDA / AKS | Key Vault + App Configuration |
+| OpenTelemetry + KQL | SDK / managed identity (assumed) |
+
+Do not skip the easy column — Domain A is still **25–30%**, and Redis/Key Vault still score. Messaging (Service Bus vs Event Grid) and Functions sit in the middle: small syllabus, high trap density.
+
+---
+
 ## Skills at a glance (study priority)
 
 | Weight | Domain | Topic files |

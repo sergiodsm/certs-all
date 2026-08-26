@@ -43,11 +43,12 @@ Developer-focused study materials for **Exam AI-200: Developing AI Cloud Solutio
 ## Suggested study flow
 
 1. Read [exam roadmap](./topics_details/00-exam-roadmap.md)
-2. Study topic files **01 → 12** in order
-3. Complete [labs](./topics_details/labs/) (minimum 4)
-4. Review modules **01 → 06** for quick Q&A drill
-5. [Scenarios walkthrough](./topics_details/examples/scenarios-walkthrough.md) + [exam traps](./topics_details/reference/exam-traps.md)
-6. Mock session with [AI-200-INSTRUCTOR.md](./AI-200-INSTRUCTOR.md)
+2. Study **hard topics first** — [hardest vs easiest](./README_CURSOR.md#4-hardest-and-easiest-topics-study-order) (Cosmos, pgvector RAG, KEDA/AKS, KQL)
+3. Study topic files **01 → 12** (or the pass order in that section)
+4. Complete [labs](./topics_details/labs/) (minimum 4)
+5. Review modules **01 → 06** for quick Q&A drill
+6. [Scenarios walkthrough](./topics_details/examples/scenarios-walkthrough.md) + [exam traps](./topics_details/reference/exam-traps.md)
+7. Mock session with [AI-200-INSTRUCTOR.md](./AI-200-INSTRUCTOR.md)
 
 ---
 

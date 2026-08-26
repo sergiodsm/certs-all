@@ -132,20 +132,62 @@ Mapped 1:1 from the [AI-200 study guide](https://learn.microsoft.com/en-us/crede
 
 ---
 
-## 4. How to study with this file
+## 4. Hardest and easiest topics (study order)
 
-1. Read sections **2–3** once (skills + topics map).
-2. Drill **one topic** at a time (20 MCQs). Cover answers until you attempt.
+Difficulty here is **how hard the topic is to study and keep straight on exam day** — not exam weight. Weight still matters: spend extra time on anything that is both hard **and** high-scoring (especially Domain A).
+
+Study the hard topics first while attention is high. Revisit them after the easy ones so the gotchas stick. Candidates coming from AZ-204 can skim **B1** and **D1**; almost nobody should skim **A1**, **A2**, or **B2**.
+
+| Rank | Difficulty | Topic | Domain weight | Why it is this hard (or easy) |
+|------|------------|-------|---------------|-------------------------------|
+| 1 | Hardest | [A1 — Cosmos DB for NoSQL](#topic-a--azure-data-management-for-ai-20-questions) | 25–30% (shared) | Many knobs interact: SDK queries, **RUs**, indexing policies, consistency levels, **vector search**, and **change feed** for RAG sync. Session vs strong consistency and “rebuild nightly” traps are frequent. |
+| 2 | Very hard | [A2 — PostgreSQL + pgvector RAG](#topic-a--azure-data-management-for-ai-20-questions) | 25–30% (shared) | Relational schema + **pgvector** indexes + compute/memory sizing + **metadata/tenant filters**. Easy to mix up with Cosmos. Connection pooling and mismatched embedding dimensions fail retrieval silently. |
+| 3 | Hard | [B2 — Container Apps, KEDA, AKS](#topic-b--containerized-solutions-20-questions) | 20–25% (shared) | Three hosting models to separate. **KEDA on queue depth** vs CPU autoscale; Container Apps **revisions**/traffic split vs App Service vs **AKS manifests**. Connectivity/logs troubleshooting is dense. |
+| 4 | Hard | [D2 — OpenTelemetry + KQL](#topic-d--secure-monitor-and-troubleshoot-20-questions) | 20–25% (shared) | Unfamiliar language for many developers. Wrong table (`requests` vs `dependencies` vs `traces`); App Insights SDK when the stem says **OpenTelemetry**; you cannot query what you never collected. |
+| 5 | Moderate | [C1 — Service Bus + Event Grid](#topic-c--connect-and-consume-azure-services-20-questions) | 20–25% (shared) | Small concept set, high trap density: Event Grid is **not** a work queue; **DLQ** for poison messages; retries without **idempotency** duplicate embeddings/cost. |
+| 6 | Moderate | [C2 — Azure Functions](#topic-c--connect-and-consume-azure-services-20-questions) | 20–25% (shared) | **Trigger vs binding**; Consumption plan **timeout** on long embed jobs. Straightforward once those two traps are memorized. |
+| 7 | Easier | [B1 — ACR + App Service containers](#topic-b--containerized-solutions-20-questions) | 20–25% (shared) | Familiar if you have built images: **ACR / ACR Tasks**, env vars vs secrets, never bake secrets into layers, avoid `:latest` in production. |
+| 8 | Easier | [A3 — Azure Managed Redis](#topic-a--azure-data-management-for-ai-20-questions) | 25–30% (shared) | Short surface: cache + TTL + **invalidation** + **vector index**. The trap is treating Redis as the **only** source of truth for durable/compliance data. |
+| 9 | Easier | [D1 — Key Vault + App Configuration](#topic-d--secure-monitor-and-troubleshoot-20-questions) | 20–25% (shared) | Classic split: secrets + **rotation** in Key Vault; non-secret settings / feature flags in App Configuration (Key Vault references). Least-privilege **Secrets User**, not Contributor. |
+| 10 | Easiest | Cross-cutting SDK / Entra ID / managed identity | Every domain | `DefaultAzureCredential`, no keys in code/images, retries + timeouts. Assumed, not a large new syllabus — still the default correct answer on auth questions. |
+
+**RAG overlays A1–A3:** same embedding model at index and query time, **tenant/metadata filter on every vector query**, change feed or cache invalidation after updates. That overlay is as exam-critical as the stores themselves.
+
+### What to drill on the hard topics
+
+1. **A1 Cosmos** — Change feed processor to re-embed/reindex; RU levers = **indexing policy + consistency**; vector search lives in Cosmos, not “export to Blob nightly.”
+2. **A2 PostgreSQL** — `pgvector` + RAG with **metadata filters**; size compute/memory for vectors; pool connections; never mix embedding models.
+3. **B2 orchestration** — Queue workers scale with **KEDA**, not CPU-only. Container Apps **revisions** for traffic split; AKS when the scenario wants **manifest files**.
+4. **D2 telemetry** — Instrument with **OpenTelemetry**; write basic **KQL** for HTTP outcomes (`requests`) vs downstream latency (`dependencies`).
+
+### Suggested pass order (not the official outline order)
+
+```text
+Pass 1 (depth):  A1 Cosmos → A2 PostgreSQL/pgvector → B2 KEDA/AKS → D2 OTel/KQL
+Pass 2 (faster): C1 Service Bus/Event Grid → C2 Functions → B1 ACR/App Service → A3 Redis → D1 Key Vault
+Pass 3 (mix):    Section 6 question banks + exam traps
+```
+
+Weight reminder: Domain A is **25–30%** of the exam. Do not confuse “easier to study” with “safe to skip” — Redis, Key Vault, and Functions still score.
+
+Deeper explanations: [`topics_details/02-cosmos-db-nosql-ai.md`](./topics_details/02-cosmos-db-nosql-ai.md), [`03-postgresql-pgvector-rag.md`](./topics_details/03-postgresql-pgvector-rag.md), [`07-container-apps-keda-aks.md`](./topics_details/07-container-apps-keda-aks.md), [`11-opentelemetry-kql-troubleshooting.md`](./topics_details/11-opentelemetry-kql-troubleshooting.md), [`reference/exam-traps.md`](./topics_details/reference/exam-traps.md).
+
+---
+
+## 5. How to study with this file
+
+1. Read sections **2–4** once (skills, topics map, hardest vs easiest).
+2. Drill **one topic** at a time (20 MCQs), **hard topics first**. Cover answers until you attempt.
 3. For each miss: read the **Official source** link, then re-answer from memory.
 4. Target **≥ 16/20** per topic before scheduling.
 5. Optional deeper material in this folder: [`AI-200-topics.md`](./AI-200-topics.md), [`AI-200-INSTRUCTOR.md`](./AI-200-INSTRUCTOR.md), [`topics_details/`](./topics_details/).
 
 ---
 
-## 5. Exam-style practice questions (20 per topic)
+## 6. Exam-style practice questions (20 per topic)
 
 Format: single best answer unless noted.  
-**Answers, explanations, and official sources** are in [Section 6](#6-answer-key-with-official-source-validation).
+**Answers, explanations, and official sources** are in [Section 7](#7-answer-key-with-official-source-validation).
 
 ---
 
@@ -725,7 +767,7 @@ Format: single best answer unless noted.
 
 ---
 
-## 6. Answer key with official source validation
+## 7. Answer key with official source validation
 
 Each answer cites the **skills measured** bullet and a Microsoft Learn page that substantiates the concept.
 
@@ -883,7 +925,7 @@ Each answer cites the **skills measured** bullet and a Microsoft Learn page that
 
 ---
 
-## 7. Quick service chooser (exam intuition)
+## 8. Quick service chooser (exam intuition)
 
 | Need | Prefer |
 |------|--------|
@@ -904,7 +946,7 @@ Each answer cites the **skills measured** bullet and a Microsoft Learn page that
 
 ---
 
-## 8. Official links checklist
+## 9. Official links checklist
 
 - [Certification page](https://learn.microsoft.com/en-us/credentials/certifications/azure-ai-cloud-developer-associate/?practice-assessment-type=certification)
 - [Study guide (skills measured)](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-200)
@@ -915,7 +957,7 @@ Each answer cites the **skills measured** bullet and a Microsoft Learn page that
 
 ---
 
-## 9. Local course map (optional deep dive)
+## 10. Local course map (optional deep dive)
 
 | Need | Path |
 |------|------|
